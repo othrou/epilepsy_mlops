@@ -5,7 +5,7 @@ Welcome to the **Epilepsy MLOps Project**, a robust and scalable pipeline design
 ---
 
 ## 📂 **Repository Structure**
-
+ ```
 ├── .github/                                 # GitHub Actions CI/CD pipeline configuration
 │   └── workflows/                          # Directory for GitHub Actions workflow files
 │       └── ci-cd.yml                       # Implementation of CI/CD pipeline
@@ -39,7 +39,8 @@ Welcome to the **Epilepsy MLOps Project**, a robust and scalable pipeline design
 │   ├── patient_data_pull/                  # Extracts patient-specific data for inference
 │   └── preprocessing/                      # Preprocessing service for data cleaning and preparation
 └── .gitignore                               # Files ignored by Git
-
+ ```
+ 
 
 ---
 
