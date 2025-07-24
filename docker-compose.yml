@@ -119,6 +119,7 @@ services:
       - mlflow-net
     environment:
       - DATA_PATH=/app/data
+      - MLFLOW_TRACKING_URI=http://mlflow:5000  # URI de MLflow
       - MODEL_PATH=/app/production/model/data/model.keras
       - SECRET_KEY=your_secret_key
     healthcheck:
