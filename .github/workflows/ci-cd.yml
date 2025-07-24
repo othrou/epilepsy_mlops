@@ -1,1 +1,81 @@
-tests
+# .github/workflows/ci-cd.yml
+
+name: CI/CD Pipeline for Epilepsy MLOps
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # --- Job 1: Lancer les tests unitaires ---
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10"]
+
+    steps:
+    - name: 1. Checkout du code
+      uses: actions/checkout@v4
+
+    - name: 2. Mise en place de Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: 3. Installation des dépendances
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r services/inference/requirements.txt # Installe les dépendances de chaque service
+        pip install -r services/authentication/requirements.txt
+        # etc. pour tous les services...
+        pip install pytest pytest-mock httpx # Dépendances de test
+
+    - name: 4. Lancer les tests avec Pytest
+      run: pytest
+
+  # --- Job 2: Construire et publier les images Docker ---
+  build_and_push:
+    # Ce job ne s'exécute que si les tests passent, et uniquement sur la branche 'main'
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 1. Checkout du code
+      uses: actions/checkout@v4
+
+    - name: 2. Connexion à Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        # Remplacez par le registre de votre choix (ex: GitHub Container Registry)
+
+    - name: 3. Construire et publier l'image de l'API d'inférence
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/inference
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-inference-api:latest
+
+    - name: 4. Construire et publier l'image de l'API d'authentification
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/authentication
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-auth-api:latest
+    
+    # Ajoutez une étape similaire pour chaque service (model_training, evaluate, etc.)
+    # Exemple pour l'entraînement :
+    - name: 5. Construire et publier l'image d'entraînement
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/model_training
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-training:latest
