@@ -1,0 +1,6 @@
+outs:
+- md5: 162fb6add3ddf215150b260df56557b5.dir
+  size: 6995421
+  nfiles: 1
+  hash: md5
+  path: patients_inference

@@ -1,0 +1,6 @@
+outs:
+- md5: 7904f2b1ba12ac542aec96d396b2af96.dir
+  size: 6972192
+  nfiles: 1
+  hash: md5
+  path: patients

@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pandas
+numpy
+tensorflow
+python-jose[cryptography]
+python-multipart
+mlflow>=2.0.0

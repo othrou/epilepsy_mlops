@@ -1,0 +1,6 @@
+outs:
+- md5: bada19fa205ee80cbb8c6d0d4026bf34.dir
+  size: 161
+  nfiles: 1
+  hash: md5
+  path: metrics
