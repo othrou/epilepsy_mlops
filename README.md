@@ -6,32 +6,40 @@ Welcome to the **Epilepsy MLOps Project**, a robust and scalable pipeline design
 
 ## 📂 **Repository Structure**
 
-```
-├── .dvc                 # DVC tracking files for versioning datasets and models
-├── .dvcignore           # Files ignored by DVC
-├── README.md            # Project documentation
-├── docker-compose.yml   # Docker Compose configuration for container orchestration
-├── metrics.dvc          # Versioned metrics for model evaluation
-├── models.dvc           # Tracked versions of trained models
-├── pipeline.py          # Prefect-based pipeline for automating workflows
-├── production.dvc       # Tracks the current production-ready model
-├── requirements.txt     # Global dependencies for the project
-├── data/                # Data directory with raw, processed, and inference-specific datasets
-│   ├── patients.dvc
-│   ├── patients_inference.dvc
-│   ├── processed.dvc
-│   └── raw.dvc
-├── mlflow_data/         # MLflow database and artifacts for experiment tracking
-│   └── mlflow.db
-├── services/            # Microservices for different components of the pipeline
-│   ├── authentication/  # JWT-based authentication API
-│   ├── evaluate/        # Model evaluation and promotion scripts
-│   ├── inference/       # FastAPI-based inference API
-│   ├── model_training/  # Model training service
-│   ├── patient_data_pull/ # Extracts patient-specific data for inference
-│   └── preprocessing/   # Preprocessing service for data cleaning and preparation
-└── .gitignore           # Files ignored by Git
-```
+├── .github/                                 # GitHub Actions CI/CD pipeline configuration
+│   └── workflows/                          # Directory for GitHub Actions workflow files
+│       └── ci-cd.yml                       # Implementation of CI/CD pipeline
+├── .dvc                                     # DVC tracking files for versioning datasets and models
+├── .dvcignore                               # Files ignored by DVC
+├── README.md                                # Project documentation and instructions
+├── docker-compose.yml                       # Docker Compose configuration for container orchestration
+├── metrics.dvc                              # Versioned metrics for model evaluation
+├── models.dvc                               # DVC file to track versions of trained models
+├── pipeline.py                              # Prefect-based pipeline for automating workflows
+├── production.dvc                           # Tracks the current production-ready model
+├── requirements.txt                        # Global dependencies for the project
+├── requirements-dev.txt                    # Development dependencies, e.g., for testing and linting
+├── data/                                    # Data directory with raw, processed, and inference-specific datasets
+│   ├── raw/                                # Raw data (unprocessed, uncleaned data)
+│   ├── processed/                          # Processed data ready for training and inference
+│   └── patients_inference/                 # Inference-specific patient data
+├── tests/                                   # Unit tests directory for testing services and modules
+│   ├── test_authentication.py              # Tests for the authentication service
+│   ├── test_evaluate.py                    # Tests for the model evaluation service
+│   ├── test_inference.py                   # Tests for the inference API
+│   ├── test_model_training.py              # Tests for the model training service
+│   └── test_preprocessing.py               # Tests for the preprocessing service
+├── mlflow_data/                             # MLflow directory for experiment tracking and artifacts
+│   └── mlflow.db                           # MLflow SQLite database and artifact storage
+├── services/                                # Microservices for different components of the pipeline
+│   ├── authentication/                     # JWT-based authentication API
+│   ├── evaluate/                           # Model evaluation and promotion scripts
+│   ├── inference/                          # FastAPI-based inference API
+│   ├── model_training/                     # Model training service (training models)
+│   ├── patient_data_pull/                  # Extracts patient-specific data for inference
+│   └── preprocessing/                      # Preprocessing service for data cleaning and preparation
+└── .gitignore                               # Files ignored by Git
+
 
 ---
 
@@ -88,6 +96,59 @@ Welcome to the **Epilepsy MLOps Project**, a robust and scalable pipeline design
   - Protects sensitive endpoints with JWT tokens, ensuring secure access to APIs.
 - **Future Improvements**:
   - Add token expiration management and automatic renewal mechanisms for enhanced security.
+
+### **8. CI/CD Pipeline**
+
+* The pipeline automates the process of **testing, building, and deploying services** using Docker.
+* It **checks out the code**, builds Docker images for each service, and **pushes them to Docker Hub**, ensuring the latest versions of all services are always ready for deployment.
+
+### **1. Checkout the code**
+
+* The pipeline pulls the latest version of the code from the Git repository to the CI/CD environment using `actions/checkout@v4`.
+
+### **2. Connect to Docker Hub**
+
+* The pipeline logs into **Docker Hub** using credentials stored in GitHub Secrets (`DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN`).
+
+### **3. Display login message**
+
+* It confirms the successful login to Docker Hub with a message, indicating the pipeline has connected successfully.
+
+### **4. Build and push the `authentication` image**
+
+* The Docker image for the **authentication** service is built using the `Dockerfile` found in the `services/authentication/` directory.
+* The built image is pushed to **Docker Hub** with the tag `epilepsy-authentication:latest`.
+
+### **5. Build and push the `evaluate` image**
+
+* Similarly, the Docker image for the **evaluation** service is built and pushed to Docker Hub with the tag `epilepsy-evaluate:latest`.
+
+### **6. Build and push the `inference` image**
+
+* The Docker image for the **inference** service (used for model predictions) is built and pushed to Docker Hub with the tag `epilepsy-inference:latest`.
+
+### **7. Build and push the `model_training` image**
+
+* The Docker image for the **model training** service is built and pushed to Docker Hub with the tag `epilepsy-model_training:latest`.
+
+### **8. Build and push the `patient_data_pull` image**
+
+* The Docker image for the **patient data pull** service is built and pushed to Docker Hub with the tag `epilepsy-patient_data_pull:latest`.
+
+### **9. Build and push the `preprocessing` image**
+
+* The Docker image for the **preprocessing** service is built and pushed to Docker Hub with the tag `epilepsy-preprocessing:latest`.
+
+### **10. Build and push the `prefect_orchestrator` image**
+
+* The Docker image for the **Prefect orchestrator** service is built and pushed to Docker Hub with the tag `epilepsy-prefect_orchestrator:latest`.
+
+### **11. Final message**
+
+* Once all images are built and pushed successfully, a message is displayed confirming the completion of the pipeline, with all Docker images now available on Docker Hub.
+
+
+
 
 ---
 
