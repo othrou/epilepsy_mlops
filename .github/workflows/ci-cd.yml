@@ -1,5 +1,3 @@
-# .github/workflows/ci-cd.yml
-
 name: CI/CD Pipeline for Epilepsy MLOps
 
 on:
@@ -11,7 +9,7 @@ on:
       - main
 
 jobs:
-  # --- Job 1: Lancer les tests unitaires ---
+  # Job 1: Lancer les tests unitaires
   test:
     runs-on: ubuntu-latest
     strategy:
@@ -34,8 +32,7 @@ jobs:
         echo "--- Installation des dépendances Python ---"
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        # Installation des dépendances spécifiques à chaque service pour s'assurer que les tests peuvent les importer
-        echo "Installation des dépendances pour les services..."
+        # Installation des dépendances spécifiques à chaque service
         pip install -r services/authentication/requirements.txt
         pip install -r services/evaluate/requirements.txt
         pip install -r services/inference/requirements.txt
@@ -43,20 +40,18 @@ jobs:
         pip install -r services/patient_data_pull/requirements.txt
         pip install -r services/preprocessing/requirements.txt
         pip install -r services/prefect_orchestrator/requirements.txt
-        echo "Installation des dépendances de test (pytest, pytest-mock, httpx)..."
+        # Dépendances de test
         pip install pytest pytest-mock httpx
         echo "--- Dépendances installées avec succès ---"
 
     - name: 4. Lancer les tests avec Pytest
       run: |
         echo "--- Démarrage des tests unitaires ---"
-        # Assurez-vous que vos tests sont dans le répertoire 'tests/' ou sont découvrables par pytest à la racine
         pytest tests/
         echo "--- Tests unitaires terminés ---"
 
-  # --- Job 2: Construire et publier les images Docker ---
+  # Job 2: Construire et publier les images Docker
   build_and_push:
-    # Ce job ne s'exécute que si les tests passent, et uniquement sur la branche 'main'
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -70,73 +65,59 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-      env:
-        # Afficher un message de succès après la connexion (ne pas afficher les secrets)
-        DOCKER_USERNAME_DISPLAY: ${{ secrets.DOCKERHUB_USERNAME }}
-      run: echo "Connecté à Docker Hub en tant que $DOCKER_USERNAME_DISPLAY"
 
-    # --- Construire et publier l'image de l'API d'authentification ---
-    - name: 3. Construire et publier l'image 'authentication'
+    - name: 3. Affichage du message de connexion
+      run: echo "Connecté à Docker Hub en tant que ${{ secrets.DOCKERHUB_USERNAME }}"
+
+    # Construire et publier les images Docker pour chaque service
+    - name: 4. Construire et publier l'image 'authentication'
       uses: docker/build-push-action@v5
       with:
         context: ./services/authentication
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-authentication:latest
-      run: echo "Image 'authentication' construite et poussée."
 
-    # --- Construire et publier l'image de l'API d'évaluation ---
-    - name: 4. Construire et publier l'image 'evaluate'
+    - name: 5. Construire et publier l'image 'evaluate'
       uses: docker/build-push-action@v5
       with:
         context: ./services/evaluate
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-evaluate:latest
-      run: echo "Image 'evaluate' construite et poussée."
 
-    # --- Construire et publier l'image de l'API d'inférence ---
-    - name: 5. Construire et publier l'image 'inference'
+    - name: 6. Construire et publier l'image 'inference'
       uses: docker/build-push-action@v5
       with:
         context: ./services/inference
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-inference:latest
-      run: echo "Image 'inference' construite et poussée."
 
-    # --- Construire et publier l'image d'entraînement de modèle ---
-    - name: 6. Construire et publier l'image 'model_training'
+    - name: 7. Construire et publier l'image 'model_training'
       uses: docker/build-push-action@v5
       with:
         context: ./services/model_training
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-model_training:latest
-      run: echo "Image 'model_training' construite et poussée."
 
-    # --- Construire et publier l'image de pull des données patient ---
-    - name: 7. Construire et publier l'image 'patient_data_pull'
+    - name: 8. Construire et publier l'image 'patient_data_pull'
       uses: docker/build-push-action@v5
       with:
         context: ./services/patient_data_pull
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-patient_data_pull:latest
-      run: echo "Image 'patient_data_pull' construite et poussée."
 
-    # --- Construire et publier l'image de prétraitement ---
-    - name: 8. Construire et publier l'image 'preprocessing'
+    - name: 9. Construire et publier l'image 'preprocessing'
       uses: docker/build-push-action@v5
       with:
         context: ./services/preprocessing
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-preprocessing:latest
-      run: echo "Image 'preprocessing' construite et poussée."
 
-    # --- Construire et publier l'image de l'orchestrateur Prefect ---
-    - name: 9. Construire et publier l'image 'prefect_orchestrator'
+    - name: 10. Construire et publier l'image 'prefect_orchestrator'
       uses: docker/build-push-action@v5
       with:
         context: ./services/prefect_orchestrator
         push: true
         tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-prefect_orchestrator:latest
-      run: echo "Image 'prefect_orchestrator' construite et poussée."
 
-    - name: 10. Pipeline CI/CD terminé
+    - name: 11. Pipeline CI/CD terminé
       run: echo "--- Toutes les images Docker ont été construites et poussées avec succès sur Docker Hub ---"
