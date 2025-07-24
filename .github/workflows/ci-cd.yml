@@ -21,23 +21,38 @@ jobs:
     steps:
     - name: 1. Checkout du code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0 # Nécessaire pour les opérations Git qui pourraient être utilisées par DVC ou MLflow
 
     - name: 2. Mise en place de Python ${{ matrix.python-version }}
       uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: 3. Installation des dépendances
+    - name: 3. Installation des dépendances globales et de test
       run: |
+        echo "--- Installation des dépendances Python ---"
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install -r services/inference/requirements.txt # Installe les dépendances de chaque service
+        # Installation des dépendances spécifiques à chaque service pour s'assurer que les tests peuvent les importer
+        echo "Installation des dépendances pour les services..."
         pip install -r services/authentication/requirements.txt
-        # etc. pour tous les services...
-        pip install pytest pytest-mock httpx # Dépendances de test
+        pip install -r services/evaluate/requirements.txt
+        pip install -r services/inference/requirements.txt
+        pip install -r services/model_training/requirements.txt
+        pip install -r services/patient_data_pull/requirements.txt
+        pip install -r services/preprocessing/requirements.txt
+        pip install -r services/prefect_orchestrator/requirements.txt
+        echo "Installation des dépendances de test (pytest, pytest-mock, httpx)..."
+        pip install pytest pytest-mock httpx
+        echo "--- Dépendances installées avec succès ---"
 
     - name: 4. Lancer les tests avec Pytest
-      run: pytest
+      run: |
+        echo "--- Démarrage des tests unitaires ---"
+        # Assurez-vous que vos tests sont dans le répertoire 'tests/' ou sont découvrables par pytest à la racine
+        pytest tests/
+        echo "--- Tests unitaires terminés ---"
 
   # --- Job 2: Construire et publier les images Docker ---
   build_and_push:
@@ -55,27 +70,73 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-        # Remplacez par le registre de votre choix (ex: GitHub Container Registry)
+      env:
+        # Afficher un message de succès après la connexion (ne pas afficher les secrets)
+        DOCKER_USERNAME_DISPLAY: ${{ secrets.DOCKERHUB_USERNAME }}
+      run: echo "Connecté à Docker Hub en tant que $DOCKER_USERNAME_DISPLAY"
 
-    - name: 3. Construire et publier l'image de l'API d'inférence
-      uses: docker/build-push-action@v5
-      with:
-        context: ./services/inference
-        push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-inference-api:latest
-
-    - name: 4. Construire et publier l'image de l'API d'authentification
+    # --- Construire et publier l'image de l'API d'authentification ---
+    - name: 3. Construire et publier l'image 'authentication'
       uses: docker/build-push-action@v5
       with:
         context: ./services/authentication
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-auth-api:latest
-    
-    # Ajoutez une étape similaire pour chaque service (model_training, evaluate, etc.)
-    # Exemple pour l'entraînement :
-    - name: 5. Construire et publier l'image d'entraînement
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-authentication:latest
+      run: echo "Image 'authentication' construite et poussée."
+
+    # --- Construire et publier l'image de l'API d'évaluation ---
+    - name: 4. Construire et publier l'image 'evaluate'
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/evaluate
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-evaluate:latest
+      run: echo "Image 'evaluate' construite et poussée."
+
+    # --- Construire et publier l'image de l'API d'inférence ---
+    - name: 5. Construire et publier l'image 'inference'
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/inference
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-inference:latest
+      run: echo "Image 'inference' construite et poussée."
+
+    # --- Construire et publier l'image d'entraînement de modèle ---
+    - name: 6. Construire et publier l'image 'model_training'
       uses: docker/build-push-action@v5
       with:
         context: ./services/model_training
         push: true
-        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-training:latest
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-model_training:latest
+      run: echo "Image 'model_training' construite et poussée."
+
+    # --- Construire et publier l'image de pull des données patient ---
+    - name: 7. Construire et publier l'image 'patient_data_pull'
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/patient_data_pull
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-patient_data_pull:latest
+      run: echo "Image 'patient_data_pull' construite et poussée."
+
+    # --- Construire et publier l'image de prétraitement ---
+    - name: 8. Construire et publier l'image 'preprocessing'
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/preprocessing
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-preprocessing:latest
+      run: echo "Image 'preprocessing' construite et poussée."
+
+    # --- Construire et publier l'image de l'orchestrateur Prefect ---
+    - name: 9. Construire et publier l'image 'prefect_orchestrator'
+      uses: docker/build-push-action@v5
+      with:
+        context: ./services/prefect_orchestrator
+        push: true
+        tags: ${{ secrets.DOCKERHUB_USERNAME }}/epilepsy-prefect_orchestrator:latest
+      run: echo "Image 'prefect_orchestrator' construite et poussée."
+
+    - name: 10. Pipeline CI/CD terminé
+      run: echo "--- Toutes les images Docker ont été construites et poussées avec succès sur Docker Hub ---"
