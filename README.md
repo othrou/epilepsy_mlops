@@ -1,4 +1,5 @@
-# 🧠 **Epilepsy MLOps Project**
+# 🧠 **Epilepsy MLOps Project (test ci-cd)**
+
 
 Welcome to the **Epilepsy MLOps Project**, a robust and scalable pipeline designed for end-to-end machine learning operations (MLOps). This repository is structured to handle everything from data preprocessing to model deployment, ensuring reproducibility, scalability, and security. Below is an overview of the project's architecture, key features, and recommendations for improvement.
 
