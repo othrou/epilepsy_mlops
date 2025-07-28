@@ -1,0 +1,12 @@
+global:
+  scrape_interval: 15s
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: 'auth_api'
+    static_configs:
+      - targets: ['auth_api:8000']
+  - job_name: 'inference_api'
+    static_configs:
+      - targets: ['inference_api:8001']

@@ -3,3 +3,7 @@ uvicorn
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
+
+# prometheus monitoring
+prometheus_client
+dotenv

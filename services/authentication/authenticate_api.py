@@ -5,6 +5,24 @@ from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from fastapi.security import OAuth2PasswordBearer
 import hashlib
+from dotenv import load_dotenv
+from fastapi.responses import Response
+
+
+
+
+#################################### prometheus monitoring ########################################################
+# Import Prometheus metrics
+from prometheus_client import Counter, Histogram
+
+# Load environment variables
+load_dotenv()
+
+# Prometheus Metrics
+REQUEST_COUNT = Counter('http_requests_total', 'Total HTTP Requests', ['method', 'endpoint', 'status_code'])
+REQUEST_LATENCY = Histogram('http_request_duration_seconds', 'HTTP Request Latency', ['method', 'endpoint'])
+
+#################################################################################################################
 
 SECRET_KEY = "your_secret_key"  
 ALGORITHM = "HS256"
@@ -92,6 +110,15 @@ def validate_token(token: str):
         return {"valid": True, "username": username}
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+    
+
+
+# Add a prometheus metrics endpoint
+@app.get("/metrics")
+async def metrics():
+    from prometheus_client import generate_latest
+    # Retournez la réponse Prometheus avec le bon Content-Type
+    return Response(content=generate_latest(), media_type="text/plain; version=0.0.4; charset=utf-8")
 
 if __name__ == "__main__":
     import uvicorn

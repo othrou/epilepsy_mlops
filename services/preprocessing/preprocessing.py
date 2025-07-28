@@ -8,9 +8,13 @@ from tensorflow.keras.utils import to_categorical
 import os
 from pathlib import Path
 
+""""
+python based execution
+
 # Chemin relatif au script
 BASE_DIR = Path(__file__).parent.parent.parent
 DATA_DIR = BASE_DIR / "data"
+
 
 # Debugging output
 print(f"BASE_DIR: {BASE_DIR}")
@@ -21,15 +25,28 @@ PROCESSED_X_TRAIN_PATH = os.getenv("PROCESSED_X_TRAIN_PATH", str(DATA_DIR / "pro
 PROCESSED_Y_TRAIN_PATH = os.getenv("PROCESSED_Y_TRAIN_PATH", str(DATA_DIR / "processed/Y_train.npy"))
 PROCESSED_X_TEST_PATH = os.getenv("PROCESSED_X_TEST_PATH", str(DATA_DIR / "processed/X_test.npy"))
 PROCESSED_Y_TEST_PATH = os.getenv("PROCESSED_Y_TEST_PATH", str(DATA_DIR / "processed/Y_test.npy"))
-PATIENT_DATA_PATH = os.getenv("PATIENT_DATA_PATH", str(DATA_DIR / "patients/patients_data.csv"))
+PATIENT_DATA_PATH = os.getenv("PATIENT_DATA_PATH", str(DATA_DIR / "patients/patients_data.csv")) """
 
-# Debugging output
+
+CONTAINER_DATA_BASE_PATH = "/app/data"
+
+RAW_DATA_PATH = os.path.join(CONTAINER_DATA_BASE_PATH, "raw", "Epileptic Seizure Recognition.csv")
+PROCESSED_X_TRAIN_PATH = os.path.join(CONTAINER_DATA_BASE_PATH, "processed", "X_train.npy")
+PROCESSED_Y_TRAIN_PATH = os.path.join(CONTAINER_DATA_BASE_PATH, "processed", "Y_train.npy")
+PROCESSED_X_TEST_PATH = os.path.join(CONTAINER_DATA_BASE_PATH, "processed", "X_test.npy")
+PROCESSED_Y_TEST_PATH = os.path.join(CONTAINER_DATA_BASE_PATH, "processed", "Y_test.npy")
+PATIENT_DATA_PATH = os.path.join(CONTAINER_DATA_BASE_PATH, "patients", "patients_data.csv")
+
+
 print(f"RAW_DATA_PATH: {RAW_DATA_PATH}")
+
+"""
+# Debugging output
 print(f"PROCESSED_X_TRAIN_PATH: {PROCESSED_X_TRAIN_PATH}")
 print(f"PROCESSED_Y_TRAIN_PATH: {PROCESSED_Y_TRAIN_PATH}")
 print(f"PROCESSED_X_TEST_PATH: {PROCESSED_X_TEST_PATH}")
 print(f"PROCESSED_Y_TEST_PATH: {PROCESSED_Y_TEST_PATH}")
-print(f"PATIENT_DATA_PATH: {PATIENT_DATA_PATH}")
+print(f"PATIENT_DATA_PATH: {PATIENT_DATA_PATH}") """
 
 print(f"📂 Reading raw data from: {RAW_DATA_PATH}")
 

@@ -100,6 +100,7 @@ services:
       - "8000:8000"
     networks:
       - mlflow-net
+      - monitoring-net
     environment:
       - SECRET_KEY=your_secret_key
     healthcheck:
@@ -115,11 +116,13 @@ services:
     volumes:
       - ./data:/app/data
       - ./production:/app/production
+      - ./mlruns:/mlflow/mlruns
     networks:
       - mlflow-net
+      - monitoring-net
     environment:
       - DATA_PATH=/app/data
-      - MLFLOW_TRACKING_URI=http://mlflow:5000  # URI de MLflow
+      - MLFLOW_TRACKING_URI=http://mlflow:5000 # URI de MLflow
       - MODEL_PATH=/app/production/model/data/model.keras
       - SECRET_KEY=your_secret_key
     healthcheck:
@@ -128,6 +131,42 @@ services:
       timeout: 10s
       retries: 3
 
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command: --config.file=/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring-net
+    depends_on:
+      - auth_api
+      - inference_api
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3002:3002"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring-net
+    depends_on:
+      - prometheus
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+
 networks:
   mlflow-net:
     driver: bridge
+  monitoring-net:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:

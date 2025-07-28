@@ -9,13 +9,45 @@ from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from jose import JWTError, jwt
 from mlflow.tracking import MlflowClient
+from fastapi.responses import Response
 
+
+##################### Prometheus monitoring imports #######################
+
+from dotenv import load_dotenv
+from prometheus_client import Counter, Histogram
+
+
+from fastapi import Request
+from prometheus_client import generate_latest
+from starlette_exporter import PrometheusMiddleware, handle_metrics
+
+app = FastAPI()
+
+# Add Prometheus middleware
+app.add_middleware(PrometheusMiddleware)
+app.add_route("/metrics", handle_metrics)
+
+# Load environment variables
+load_dotenv()
+
+# Prometheus Metrics
+PREDICTION_COUNT = Counter('predictions_total', 'Total predictions made')
+PATIENTS_WITH_EPILEPSY = Counter('patients_with_epilepsy_total', 'Total patients predicted with epilepsy')
+PATIENTS_WITHOUT_EPILEPSY = Counter('patients_without_epilepsy_total', 'Total patients predicted without epilepsy')
+EPILEPTIC_RECORDINGS = Counter('epileptic_recordings_total', 'Total epileptic recordings predicted')
+PREDICTION_LATENCY = Histogram('prediction_duration_seconds', 'Latency of predictions')
+MODEL_RELOAD_COUNT = Counter('model_reloads_total', 'Total model reloads')
+REQUEST_COUNT_INF = Counter('inference_http_requests_total', 'Total HTTP Requests for inference', ['method', 'endpoint', 'status_code'])
+REQUEST_LATENCY_INF = Histogram('inference_http_request_duration_seconds', 'HTTP Request Latency for inference', ['method', 'endpoint'])
+
+#########################################################################
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = FastAPI()
+#app = FastAPI()
 
 bearer_scheme = HTTPBearer()
 
@@ -42,6 +74,7 @@ df = None
 model = None
 
 # --- Charger le meilleur modèle depuis MLflow ---
+
 def load_best_model_from_mlflow():
     """Charge le dernier modèle disponible depuis le registre MLflow"""
     global model
@@ -105,15 +138,22 @@ def predict(patient_id: int, username: str = Depends(verify_token)):
         raise HTTPException(status_code=404, detail=f"No data found for patient {patient_id}")
     
     try:
-        X = df_patient.drop(columns=["patient_id"]).values
-        logger.info(f"Input shape before reshape: {X.shape}")
-        
-        X = X.reshape(X.shape[0], X.shape[1], 1)
-        logger.info(f"Input shape after reshape: {X.shape}")
-        
-        # Make predictions
-        preds = model.predict(X)
-        pred_classes = np.argmax(preds, axis=1)
+        with PREDICTION_LATENCY.time():
+
+            X = df_patient.drop(columns=["patient_id"]).values
+            logger.info(f"Input shape before reshape: {X.shape}")
+            
+            X = X.reshape(X.shape[0], X.shape[1], 1)
+            logger.info(f"Input shape after reshape: {X.shape}")
+            
+            # Make predictions
+            preds = model.predict(X)
+            pred_classes = np.argmax(preds, axis=1)
+
+             # Log the increment operation
+            logger.info(f"Incrementing prediction count by {len(pred_classes)}")
+            PREDICTION_COUNT.inc()         
+            
         
         # Get epileptic recording indices (1-based)
         epileptic_idxs = [i+1 for i, c in enumerate(pred_classes) if c == 1]
@@ -123,6 +163,15 @@ def predict(patient_id: int, username: str = Depends(verify_token)):
             if epileptic_idxs else
             f" Patient {patient_id} predicted as non-epileptic in all recordings."
         )
+
+        num_epileptic = len(epileptic_idxs)
+            
+            # Track epilepsy-specific metrics
+        if num_epileptic > 0:
+                PATIENTS_WITH_EPILEPSY.inc()
+                EPILEPTIC_RECORDINGS.inc(num_epileptic)
+        else:
+                PATIENTS_WITHOUT_EPILEPSY.inc()
         
         logger.info(f"Prediction completed for patient {patient_id} by user {username}")
         
@@ -135,10 +184,17 @@ def predict(patient_id: int, username: str = Depends(verify_token)):
             "message": message,
             "processed_by": username
         }
-      
     except Exception as e:
         logger.error(f"Prediction failed for patient {patient_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Prediction failed: {str(e)}")
+
+
+# Add a prometheus metrics endpoint
+@app.get("/metrics")
+async def metrics():
+    from prometheus_client import generate_latest
+    # Retournez la réponse Prometheus avec le bon Content-Type
+    return Response(content=generate_latest(), media_type="text/plain; version=0.0.4; charset=utf-8")
 
 if __name__ == "__main__":
     import uvicorn

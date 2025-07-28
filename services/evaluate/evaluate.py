@@ -6,7 +6,7 @@ from mlflow.exceptions import RestException
 
 EXPERIMENT_NAME = "epilepsy_training"
 MODEL_NAME = "epilepsy_model"
-METRIC_NAME = "val_accuracy"
+METRIC_NAME = "final_val_accuracy"
 PRODUCTION_DIR = "production"
 
 def clear_folder(folder_path):
@@ -46,7 +46,8 @@ def get_metric_from_run(client, run_id, metric_name):
     return run.data.metrics.get(metric_name, None)
 
 def register_model(run_id):
-    model_uri = f"runs:/{run_id}/model"
+    # Le chemin de l'URI doit correspondre à l'artifact_path utilisé dans train.py
+    model_uri = f"runs:/{run_id}/model" # <-- Assurez-vous que c'est "model" (singulier)
     result = mlflow.register_model(model_uri, MODEL_NAME)
     print(f"✅ Registered new model version: {result.version}")
     return result
@@ -57,7 +58,7 @@ def promote_model_to_production(client, model_name, version):
             name=model_name,
             version=version,
             stage="Production",
-            archive_existing_versions=True  # Auto-archive previous ones
+            archive_existing_versions=True
         )
         print(f"🚀 Model version {version} promoted to 'Production'")
     except Exception as e:
@@ -66,7 +67,9 @@ def promote_model_to_production(client, model_name, version):
 def save_model_artifact(version_obj, client, dest_path=PRODUCTION_DIR):
     clear_folder(dest_path)
     print(f"⬇ Downloading model version {version_obj.version} to '{dest_path}'")
-    client.download_artifacts(run_id=version_obj.run_id, path="models", dst_path=dest_path)
+    # --- MODIFICATION ICI ---
+    # Changez 'models' en 'model' pour correspondre à l'artifact_path de log_model
+    client.download_artifacts(run_id=version_obj.run_id, path="model", dst_path=dest_path)
     print(f"📁 Model saved to '{dest_path}'")
 
 if __name__ == "__main__":
@@ -98,6 +101,8 @@ if __name__ == "__main__":
         save_model_artifact(new_version, client)
 
     else:
+        print(f"📦 Current registered model: {current_registered_model.name} (version {current_registered_model.version})")
+
         current_val_accuracy = get_metric_from_run(client, current_registered_model.run_id, METRIC_NAME)
         print(f"📌 Current registered model version: {current_registered_model.version} with {METRIC_NAME}: {current_val_accuracy:.4f}")
 
