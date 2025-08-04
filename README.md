@@ -248,6 +248,9 @@ graph LR
 ---
 
 <div align="center">
-<sub>Réalisé par Sarah dans le cadre du projet MLOps • © 2025</sub>
+<sub>Machine Learning Operations • © 2025</sub>
+
+  
 </div>
+
 
